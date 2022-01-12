@@ -18,6 +18,9 @@ class Vertices:
         """Compare vertices."""
         return self.x == other.x and self.y == other.y
 
+    def __str__(self) -> str:
+        return f'{self.x}, {self.y}'
+
 
 class Shapes:
     """General class for shapes."""
@@ -97,7 +100,8 @@ def main() -> None:
     t = Triangle(vt1, vt2, vt3)
     t2 = Triangle(vt2, vt1, vt3)
     print(t.get_info())
-    #print(t == t2)
+    print(t == t2)
+    print(vt1)
 
 
 if __name__ == '__main__':
