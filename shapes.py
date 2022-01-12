@@ -19,11 +19,28 @@ class Shapes:
 
     def get_perimetr(self) -> float:
         """Get the perimeter of the shape."""
-        pass
+        raise NotImplementedError(f'Define get_perimetr in '
+                                  f'{self.__class__.__name__}')
 
     def compare(self) -> bool:
         """Compare shapes."""
         pass
+
+
+class Triangle(Shapes):
+
+    def get_perimetr(self) -> float:
+        """Get the perimeter of the shape."""
+        side_triangle = 3
+        return self.get_side() * side_triangle
+
+
+class Pentagon(Shapes):
+
+    def get_perimetr(self) -> float:
+        """Get the perimeter of the shape."""
+        side_pentagon = 5
+        return self.get_side() * side_pentagon
 
 
 def main() -> None:
