@@ -1,4 +1,4 @@
-from math import sqrt
+from math import sqrt, sin, pi
 from typing import Tuple
 
 
@@ -15,7 +15,8 @@ class Shapes:
 
     def get_area(self) -> float:
         """Get the area of the shape."""
-        pass
+        raise NotImplementedError(f'Define get_area in '
+                                  f'{self.__class__.__name__}')
 
     def get_perimetr(self) -> float:
         """Get the perimeter of the shape."""
@@ -26,26 +27,49 @@ class Shapes:
         """Compare shapes."""
         pass
 
+    def get_info(self) -> str:
+        return (f'Figure: {self.__class__.__name__},\n'
+                f'Side: {self.get_side()},\n'
+                f'Area: {self.get_area()},\n'
+                f'Perimetr: {self.get_perimetr()}')
+
 
 class Triangle(Shapes):
 
+    NUM_SIDES = 3
+
     def get_perimetr(self) -> float:
         """Get the perimeter of the shape."""
-        side_triangle = 3
-        return self.get_side() * side_triangle
+        return self.get_side() * self.NUM_SIDES
+
+    def get_area(self) -> float:
+        """Get the area of the shape."""
+        coefficient_area = sqrt(3) / 4
+        return coefficient_area * self.get_side() ** 2
 
 
 class Pentagon(Shapes):
 
+    NUM_SIDES = 5
+
     def get_perimetr(self) -> float:
         """Get the perimeter of the shape."""
-        side_pentagon = 5
-        return self.get_side() * side_pentagon
+        return self.get_side() * self.NUM_SIDES
+
+    def get_area(self) -> float:
+        """Get the area of the shape."""
+        triangle_hip = self.get_side() / (2 * sin(pi / 5))
+        triangle_area = (1/2 * self.get_side() * sqrt(triangle_hip ** 2
+                         - self.get_side() ** 2 / 4))
+        return triangle_area * self.NUM_SIDES
 
 
 def main() -> None:
-    s = Shapes((2, 1), (6, 4))
-    print(s.get_side())
+    t = Triangle((2, 1), (6, 4), (4, 2))
+    print(t.get_info())
+
+    p = Pentagon((2, 1), (6, 4), (2, 1))
+    print(p.get_info())
 
 
 if __name__ == '__main__':
