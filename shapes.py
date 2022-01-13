@@ -2,6 +2,26 @@ from dataclasses import dataclass
 from math import radians, sqrt, tan
 
 
+class WrongFigureTypeError(Exception):
+
+    def __init__(self, shape_type) -> None:
+        self.shape_type = shape_type
+
+    def __str__(self) -> str:
+        return (f'Wrong the number of vertices to create the'
+                f' {self.shape_type}')
+
+
+class WrongFigureVerticesError(Exception):
+
+    def __init__(self, shape_type) -> None:
+        self.shape_type = shape_type
+
+    def __str__(self) -> str:
+        return (f'Not possible to create a {self.shape_type} on the '
+                f'specified vertices')
+
+
 @dataclass
 class Vertices:
     """Class vertices of shapes"""
@@ -19,7 +39,7 @@ class Vertices:
         return self.x == other.x and self.y == other.y
 
     def get_tuple(self) -> tuple:
-        return (self.x, self.y)
+        return self.x, self.y
 
 
 class Shapes:
@@ -30,9 +50,17 @@ class Shapes:
     def __init__(self, *vertices: Vertices) -> None:
         self.vertices = vertices
 
+        if self.NUM_SIDES != len(self.vertices):
+            raise WrongFigureTypeError(self.__class__.__name__)
+
     def get_side(self) -> float:
-        """Get the side size by the first two vertices."""
-        return self.vertices[0].get_distance(self.vertices[1])
+        """Get the size of the side by the minimum distance between the
+        vertices."""
+        vert_start = self.vertices[0]
+        result = []
+        for vert_stop in self.vertices[1:]:
+            result.append(vert_start.get_distance(vert_stop))
+        return min(result)
 
     def get_area(self) -> float:
         """Get the area of the shape."""
@@ -73,17 +101,25 @@ class Pentagon(Shapes):
 
 
 def main() -> None:
-
-    vt1 = Vertices(6, 4)
-    vt2 = Vertices(2, 1)
-    vt3 = Vertices(4, 2)
+    # Correct coordinates
+    vt1 = Vertices(18, 2.01)
+    vt2 = Vertices(16.26, -1.01)
+    vt3 = Vertices(19.74, -1.01)
     t = Triangle(vt1, vt2, vt3)
     t2 = Triangle(vt2, vt1, vt3)
-    p = Pentagon(vt1, vt2)
     print(t.get_info())
     print(t == t2)
     print(vt1)
+
+    vp1 = Vertices(30, 2.01)
+    vp2 = Vertices(31.91, 0.62)
+    vp3 = Vertices(31.18, -1.63)
+    vp4 = Vertices(28.82, -1.63)
+    vp5 = Vertices(28.09, 0.62)
+    p = Pentagon(vp1, vp2, vp3, vp4, vp5)
+    p2 = Pentagon(vp3, vp5, vp1, vp4, vp2)
     print(p.get_info())
+    print(p == p2)
 
 
 if __name__ == '__main__':
