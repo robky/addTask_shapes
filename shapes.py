@@ -54,13 +54,13 @@ class Shapes:
 
         if self.NUM_SIDES != len(self.vertices):
             raise WrongFigureTypeError(self.__class__.__name__)
-        
+
         if not self.check_correct():
             raise WrongFigureVerticesError(self.__class__.__name__)
 
     def get_side(self) -> float:
         """Get the size of the side by the minimum distance between the
-        vertices."""        
+        vertices."""
         return self.side
 
     def get_area(self) -> float:
@@ -68,8 +68,8 @@ class Shapes:
         if self.NUM_SIDES == 0:
             raise NotImplementedError(f'Define NUM_SIDES in '
                                       f'{self.__class__.__name__}')
-        return round((((self.NUM_SIDES * (self.get_side() ** 2)) / 4)
-                * (1 / (tan(radians(180 / self.NUM_SIDES))))), self.NUM_ROUND)
+        return (round((((self.NUM_SIDES * (self.get_side() ** 2)) / 4)
+                * (1 / (tan(radians(180 / self.NUM_SIDES))))), self.NUM_ROUND))
 
     def get_perimetr(self) -> float:
         """Get the perimeter of the shape."""
@@ -93,11 +93,11 @@ class Shapes:
     def check_correct(self) -> bool:
         """The vertices must be different.
         All sides should be the same.
-        All vertices must lie on the same circle."""        
+        All vertices must lie on the same circle."""
         vert_list = [vert.get_tuple() for vert in self.vertices]
-        if len(set(vert_list)) != len(self.vertices):            
+        if len(set(vert_list)) != len(self.vertices):
             return False
-        
+
         vert_start = self.vertices[0]
         result = []
         for vert_stop in self.vertices[1:]:
@@ -108,19 +108,21 @@ class Shapes:
         work_list = [0]
         while len(temp_list):
             for i in temp_list.copy():
-                if (round(self.vertices[work_list[-1]].get_distance(
-                    self.vertices[i]), self.NUM_ROUND) == min_side):
+                if (round(self.vertices[work_list[-1]].
+                          get_distance(self.vertices[i]), self.NUM_ROUND)
+                        == min_side):
                     work_list.append(temp_list.pop(temp_list.index(i)))
                     break
             else:
                 return False
-                
-        #print(work_list)        
-        
 
-        
-        # (x1, y1), (x2, y2), (x3, y3) = 
-        # print('-----', x1, x2)
+        dist_list = []
+        for gd in work_list:
+            (dist_list.append(
+             round(self.vertices[gd].get_distance(self.vertices[
+                (gd + 2) % len(work_list)]), self.NUM_ROUND)))
+        if len(set(dist_list)) > 1:
+            return False
 
         self.side = min_side
         return True
@@ -144,8 +146,9 @@ def main() -> None:
     t = Triangle(vt1, vt2, vt3)
     t2 = Triangle(vt2, vt1, vt3)
     print(t.get_info())
+    print()
     print(t == t2)
-    print(vt1)
+    print()
 
     vp1 = Vertices(30, 2.01)
     vp2 = Vertices(31.91, 0.62)
@@ -155,7 +158,9 @@ def main() -> None:
     p = Pentagon(vp1, vp2, vp3, vp4, vp5)
     p2 = Pentagon(vp5, vp3, vp1, vp4, vp2)
     print(p.get_info())
+    print()
     print(p == p2)
+    print(t == p)
 
 
 if __name__ == '__main__':
