@@ -50,6 +50,11 @@ class Shapes:
     side: float
 
     def __init__(self, *vertices: Vertices) -> None:
+        # Мне, честно признаться, не очень нравится идея валидировать данные в конструкторе
+        # конструктор должен собрать объект из валидных данных. Но как в такой системе классов сделать красиво, сказать
+        # пока не готов.
+        # Пока видиться только превратить в абстрактный класс. См. модуль abc. И то, логику тогда придется поменять. Но
+        # это поможеть избавить от NotImplementdError в этом классе и явно не даст создать объект с типом Shapes.
         self.vertices = vertices
 
         if self.NUM_SIDES != len(self.vertices):
@@ -61,10 +66,14 @@ class Shapes:
     def get_side(self) -> float:
         """Get the size of the side by the minimum distance between the
         vertices."""
+
+        # может быть стоит это превратить в property?
         return self.side
 
     def get_area(self) -> float:
         """Get the area of the shape."""
+        # Данный метод занимается рассчетом площади. А расчет площади не занимается валидацией количества вершин.
+        # Тут явно стоит изменить логику работы.
         if self.NUM_SIDES == 0:
             raise NotImplementedError(f'Define NUM_SIDES in '
                                       f'{self.__class__.__name__}')
@@ -73,6 +82,7 @@ class Shapes:
 
     def get_perimetr(self) -> float:
         """Get the perimeter of the shape."""
+        # См. предыдущий метод.
         if self.NUM_SIDES == 0:
             raise NotImplementedError(f'Define NUM_SIDES in '
                                       f'{self.__class__.__name__}')
@@ -80,11 +90,15 @@ class Shapes:
 
     def __eq__(self, other) -> bool:
         """Compare shapes."""
+        # В классе Vertices реализован ментод __eq__, но тут почему-то используем не его. Зачем он нужен тогда?
+        # См. функцию zip, она поможет сделать все красиво
         return (set(vert.get_tuple() for vert in self.vertices)
                 == set(vert.get_tuple() for vert in other.vertices))
 
     def get_info(self) -> str:
         """Return all values of shape"""
+        # Тут все ок, но ИМХО type(self).__name__ более читаемо. Но применимы оба варианта, зависит от команды и
+        # применяемого стиля кода в ней
         return (f'Figure: {self.__class__.__name__},\n'
                 f'Side: {self.get_side()},\n'
                 f'Area: {self.get_area()},\n'
@@ -94,10 +108,18 @@ class Shapes:
         """The vertices must be different.
         All sides should be the same.
         All vertices must lie on the same circle."""
+
+        # Тут подвешу вопрос. Что вернет type(self.vertices) в классе Vertices? :)
+        # Может можно избавиться от этих конверсий туда-сюда?
         vert_list = [vert.get_tuple() for vert in self.vertices]
         if len(set(vert_list)) != len(self.vertices):
             return False
 
+
+        # Чисто математически, многоугольник правильный, если его стороны равны и углы между сторонами равны.
+        # Сорри, глубоко не вникаю, что тут происходит.
+        # В будущих проектах стоит давать более осмысленные имена переменным и изолировать логику в методах/функциях.
+        # Причем, это могут быть вложенные функции.
         vert_start = self.vertices[0]
         result = []
         for vert_stop in self.vertices[1:]:
