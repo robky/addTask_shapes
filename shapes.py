@@ -1,25 +1,16 @@
+from abc import ABC
+from cmath import sqrt
 from dataclasses import dataclass
-from math import radians, sqrt, tan
 
 
 class WrongFigureTypeError(Exception):
-
-    def __init__(self, shape_type) -> None:
-        self.shape_type = shape_type
-
     def __str__(self) -> str:
-        return (f'Wrong the number of vertices to create the'
-                f' {self.shape_type}')
+        return 'Wrong the number of vertices to create a shape'
 
 
 class WrongFigureVerticesError(Exception):
-
-    def __init__(self, shape_type) -> None:
-        self.shape_type = shape_type
-
     def __str__(self) -> str:
-        return (f'Not possible to create a {self.shape_type} on the '
-                f'specified vertices')
+        return 'Not possible to create a shape on the specified vertices'
 
 
 @dataclass
@@ -40,6 +31,149 @@ class Vertices:
 
     def get_tuple(self) -> tuple:
         return self.x, self.y
+
+
+class Shapes(ABC):
+    """Общий клас для фигур"""
+
+
+class Triangle(Shapes):
+
+    NUM_SIDES = 3
+
+
+class Pentagon(Shapes):
+
+    NUM_SIDES = 5
+
+
+class Creator():
+    """Валидация данных и создание объекта"""
+
+    side_of_shape = {
+        3: Triangle,
+        5: Pentagon
+    }
+
+    def get_object_or_error(self, *vertices: Vertices) -> Shapes:
+        num_sides = len(vertices)
+        print(f'Err: {len(vertices)}')
+        # Количество вершин должно соответсвовать создаваемым фигурам
+        if num_sides not in self.side_of_shape:
+            raise WrongFigureTypeError()
+        
+        # По заданным вершинам можно построить фигуру
+        if (not self.check_different(vertices)):
+            raise WrongFigureVerticesError()
+        
+        return self.side_of_shape[num_sides](vertices)
+        
+    def check_different(*vertices: Vertices) -> bool:
+        # Все вершины должны быть разными
+        unique = []
+        for vert in vertices:
+            if vert not in unique:
+                unique.append(vert)
+        return len(unique) == len(vertices)
+    
+    def check_correct(self) -> bool:
+        """The vertices must be different.
+        All sides should be the same.
+        All vertices must lie on the same circle."""
+
+        # Тут подвешу вопрос. Что вернет type(self.vertices) в классе Vertices? :)
+        # Может можно избавиться от этих конверсий туда-сюда?
+        vert_list = [vert.get_tuple() for vert in self.vertices]
+        if len(set(vert_list)) != len(self.vertices):
+            return False
+
+
+        # Чисто математически, многоугольник правильный, если его стороны равны и углы между сторонами равны.
+        # Сорри, глубоко не вникаю, что тут происходит.
+        # В будущих проектах стоит давать более осмысленные имена переменным и изолировать логику в методах/функциях.
+        # Причем, это могут быть вложенные функции.
+        vert_start = self.vertices[0]
+        result = []
+        for vert_stop in self.vertices[1:]:
+            result.append(round(vert_start.get_distance(vert_stop),
+                          self.NUM_ROUND))
+        min_side = min(result)
+        temp_list = list(range(1, len(self.vertices)))
+        work_list = [0]
+        while len(temp_list):
+            for i in temp_list.copy():
+                if (round(self.vertices[work_list[-1]].
+                          get_distance(self.vertices[i]), self.NUM_ROUND)
+                        == min_side):
+                    work_list.append(temp_list.pop(temp_list.index(i)))
+                    break
+            else:
+                return False
+
+        dist_list = []
+        for gd in work_list:
+            (dist_list.append(
+             round(self.vertices[gd].get_distance(self.vertices[
+                (gd + 2) % len(work_list)]), self.NUM_ROUND)))
+        if len(set(dist_list)) > 1:
+            return False
+
+        self.side = min_side
+        return True
+
+
+def action(*vertices: Vertices) -> Shapes:
+    print(f'action: {len(vertices)}')
+    return Creator().get_object_or_error(*vertices)
+
+
+def main() -> None:
+    # Correct coordinates
+    vt1 = Vertices(18, 2.01)
+    vt2 = Vertices(16.26, -1.01)
+    vt3 = Vertices(19.74, -1.01)
+    t1 = action(vt1, vt2, vt3)
+    #t = Triangle(vt1, vt2, vt3)
+    #t2 = Triangle(vt2, vt1, vt3)
+    #print(t1.get_info())
+    print(t1)
+    #print(t == t2)
+    #print()
+
+    vp1 = Vertices(30, 2.01)
+    vp2 = Vertices(31.91, 0.62)
+    vp3 = Vertices(31.18, -1.63)
+    vp4 = Vertices(28.82, -1.63)
+    vp5 = Vertices(28.09, 0.62)
+    #p = Pentagon(vp1, vp2, vp3, vp4, vp5)
+    #p2 = Pentagon(vp5, vp3, vp1, vp4, vp2)
+    #print(p.get_info())
+    #print()
+    #print(p == p2)
+    #print(t == p)
+
+    
+
+if __name__ == '__main__':
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''from dataclasses import dataclass
+from math import radians, sqrt, tan
+
+
+
 
 
 class Shapes:
@@ -187,3 +321,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+'''
