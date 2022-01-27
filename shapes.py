@@ -1,6 +1,7 @@
 from abc import ABC
-from cmath import sqrt
+from math import sqrt
 from dataclasses import dataclass
+from typing import List, Tuple
 
 
 class WrongFigureTypeError(Exception):
@@ -29,114 +30,137 @@ class Vertices:
         """Compare vertices."""
         return self.x == other.x and self.y == other.y
 
-    def get_tuple(self) -> tuple:
-        return self.x, self.y
-
 
 class Shapes(ABC):
     """Общий клас для фигур"""
 
+    def __init__(self, *vertices: Vertices) -> None:
+        self.vertices = vertices
+
 
 class Triangle(Shapes):
-
     NUM_SIDES = 3
 
 
 class Pentagon(Shapes):
-
     NUM_SIDES = 5
 
 
 class Creator():
     """Валидация данных и создание объекта"""
 
+    NUM_ROUND = 1
     side_of_shape = {
         3: Triangle,
         5: Pentagon
     }
+    vertices: Vertices
+    num_sides: int
+    side_length: float
+    correct_order: list
 
-    def get_object_or_error(self, *vertices: Vertices) -> Shapes:
-        num_sides = len(vertices)
-        print(f'Err: {len(vertices)}')
-        # Количество вершин должно соответсвовать создаваемым фигурам
-        if num_sides not in self.side_of_shape:
+    def get_object_or_error(self, *vertices: Tuple[Vertices]) -> Shapes:
+        self.num_sides = len(vertices)
+
+        # Количество вершин должно соответствовать создаваемым фигурам
+        if self.num_sides not in self.side_of_shape:
             raise WrongFigureTypeError()
+
+        self.vertices = vertices
+        self.side_length = self.get_side_length()
         
-        # По заданным вершинам можно построить фигуру
-        if (not self.check_different(vertices)):
+        # По заданным вершинам можно построить фигуру?
+        if not self.is_possible_build_figure():
             raise WrongFigureVerticesError()
-        
-        return self.side_of_shape[num_sides](vertices)
-        
-    def check_different(*vertices: Vertices) -> bool:
-        # Все вершины должны быть разными
+
+        return self.side_of_shape[self.num_sides](self.vertices)
+
+    def get_side_length(self) -> float:
+        result = []
+        vert_start = self.vertices[0]
+        for vert_end in self.vertices[1:]:
+            result.append(vert_start.get_distance(vert_end))
+        return round(min(result), self.NUM_ROUND)
+
+    def is_possible_build_figure(self) -> bool:
+        if (self.is_vert_different()
+                and self.is_vert_same()
+                and self.is_distance_between_adjacent_equal()):
+            return True
+        return False
+
+    def is_vert_different(self) -> bool:
         unique = []
-        for vert in vertices:
+        for vert in self.vertices:
             if vert not in unique:
                 unique.append(vert)
-        return len(unique) == len(vertices)
-    
-    def check_correct(self) -> bool:
-        """The vertices must be different.
-        All sides should be the same.
-        All vertices must lie on the same circle."""
+        return len(unique) == len(self.vertices)
 
-        # Тут подвешу вопрос. Что вернет type(self.vertices) в классе Vertices? :)
-        # Может можно избавиться от этих конверсий туда-сюда?
-        vert_list = [vert.get_tuple() for vert in self.vertices]
-        if len(set(vert_list)) != len(self.vertices):
-            return False
-
-
-        # Чисто математически, многоугольник правильный, если его стороны равны и углы между сторонами равны.
-        # Сорри, глубоко не вникаю, что тут происходит.
-        # В будущих проектах стоит давать более осмысленные имена переменным и изолировать логику в методах/функциях.
-        # Причем, это могут быть вложенные функции.
-        vert_start = self.vertices[0]
-        result = []
-        for vert_stop in self.vertices[1:]:
-            result.append(round(vert_start.get_distance(vert_stop),
-                          self.NUM_ROUND))
-        min_side = min(result)
-        temp_list = list(range(1, len(self.vertices)))
-        work_list = [0]
-        while len(temp_list):
-            for i in temp_list.copy():
-                if (round(self.vertices[work_list[-1]].
-                          get_distance(self.vertices[i]), self.NUM_ROUND)
-                        == min_side):
-                    work_list.append(temp_list.pop(temp_list.index(i)))
+    def is_vert_same(self) -> bool:
+        temp = list(range(1, self.num_sides))
+        correct_order = [0]
+        while len(temp):
+            for i in temp.copy():
+                if (round(self.vertices[correct_order[-1]].
+                          get_distance(self.vertices[i]),
+                          self.NUM_ROUND) == self.side_length):
+                    correct_order.append(temp.pop(temp.index(i)))
                     break
             else:
                 return False
-
-        dist_list = []
-        for gd in work_list:
-            (dist_list.append(
-             round(self.vertices[gd].get_distance(self.vertices[
-                (gd + 2) % len(work_list)]), self.NUM_ROUND)))
-        if len(set(dist_list)) > 1:
-            return False
-
-        self.side = min_side
+        self.correct_order = correct_order
         return True
+    
+    def is_distance_between_adjacent_equal(self) -> bool:
+        # Расстояние между соседними вершинами через одну должны быть равны
+        distance = []
+        if self.num_sides % 2 == 0:
+            distance = self.get_between_distance(self.correct_order[::2]
+                                                 + [self.correct_order[0]])
+            distance += self.get_between_distance(self.correct_order[1::2]
+                                                  + [self.correct_order[1]])
+        else:
+            distance = self.get_between_distance(self.correct_order[::2]
+                                                 + self.correct_order[1::2]
+                                                 + [self.correct_order[0]])
+        return len(set(distance)) == 1
+
+    def get_between_distance(self, indexes_correct_order) -> list:
+        result = []
+        pre_i = indexes_correct_order[0]
+        for i in indexes_correct_order[1:]:
+            (result.append(round(
+                self.vertices[pre_i].get_distance(self.vertices[i]),
+                self.NUM_ROUND)))
+            #print(self.vertices[pre_i], self.vertices[i])
+            #print(f'start: {pre_i}, stop{i} - {result}')
+
+            pre_i = i
+        return result
+
+def get_vertices(coordinates: List[tuple]):
+    return map(lambda x: Vertices(*x), coordinates)
 
 
 def action(*vertices: Vertices) -> Shapes:
-    print(f'action: {len(vertices)}')
     return Creator().get_object_or_error(*vertices)
 
 
 def main() -> None:
     # Correct coordinates
-    vt1 = Vertices(18, 2.01)
-    vt2 = Vertices(16.26, -1.01)
-    vt3 = Vertices(19.74, -1.01)
-    t1 = action(vt1, vt2, vt3)
+    triangle = [(18, 2.01), (19.74, -1.01), (16.26, -1.01)]
+    pentagon = [(31.18, -1.63), (31.91, 0.62), (28.82, -1.63), (30, 2.01),
+                (28.09, 0.62)]
+
+    t1 = action(*get_vertices(triangle))
+    p1 = action(*get_vertices(pentagon))
+
+
     #t = Triangle(vt1, vt2, vt3)
     #t2 = Triangle(vt2, vt1, vt3)
     #print(t1.get_info())
     print(t1)
+    print(p1)
     #print(t == t2)
     #print()
 
