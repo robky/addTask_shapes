@@ -1,6 +1,6 @@
 from abc import ABC
-from math import sqrt
 from dataclasses import dataclass
+from math import radians, sqrt, tan
 from typing import List, Tuple
 
 
@@ -32,29 +32,65 @@ class Vertices:
 
 
 class Shapes(ABC):
-    """Общий клас для фигур"""
+    """General abstract class for shapes."""
 
-    def __init__(self, *vertices: Vertices) -> None:
+    def __init__(self, num_sides, side_length, *vertices: Vertices) -> None:
+        self.num_sides = num_sides
+        self.side_length = side_length
         self.vertices = vertices
+
+    def get_area(self) -> float:
+        """Get the area of the shape."""
+        return ((((self.num_sides * (self.side_length ** 2)) / 4)
+                * (1 / (tan(radians(180 / self.num_sides))))))
+
+    def get_perimetr(self) -> float:
+        """Get the perimeter of the shape."""
+        return self.side_length * self.num_sides
+
+    def __str__(self) -> str:
+        return self.NAME
+
+    def get_info(self) -> str:
+        """Return all values of shape"""
+
+        return (f'Figure: {self.NAME},\n'
+                f'Number of side: {self.num_sides},\n'
+                f'Side length: {self.side_length},\n'
+                f'Area: {self.get_area()},\n'
+                f'Perimetr: {self.get_perimetr()}')
+
+    def __eq__(self, other) -> bool:
+        """Compare shapes."""
+        if self.num_sides != other.num_sides:
+            return False
+        for vert in self.vertices:
+            if vert not in other.vertices:
+                return False
+        return True
 
 
 class Triangle(Shapes):
-    NUM_SIDES = 3
+    """According to the assignment, Triangle should be the class."""
+
+    NAME = 'Triangle'
 
 
 class Pentagon(Shapes):
-    NUM_SIDES = 5
+    """According to the assignment, Pentagon should be the class"""
+
+    NAME = 'Pentagon'
 
 
 class Creator():
-    """Валидация данных и создание объекта"""
+    """Data validation and object creation"""
 
     NUM_ROUND = 1
     side_of_shape = {
         3: Triangle,
         5: Pentagon
     }
-    vertices: Vertices
+    vertices: Tuple[Vertices]
     num_sides: int
     side_length: float
     correct_order: list
@@ -62,18 +98,18 @@ class Creator():
     def get_object_or_error(self, *vertices: Tuple[Vertices]) -> Shapes:
         self.num_sides = len(vertices)
 
-        # Количество вершин должно соответствовать создаваемым фигурам
         if self.num_sides not in self.side_of_shape:
             raise WrongFigureTypeError()
 
         self.vertices = vertices
         self.side_length = self.get_side_length()
-        
-        # По заданным вершинам можно построить фигуру?
+
         if not self.is_possible_build_figure():
             raise WrongFigureVerticesError()
 
-        return self.side_of_shape[self.num_sides](self.vertices)
+        return (self.side_of_shape[self.num_sides](self.num_sides,
+                                                   self.side_length,
+                                                   *self.vertices))
 
     def get_side_length(self) -> float:
         result = []
@@ -110,9 +146,9 @@ class Creator():
                 return False
         self.correct_order = correct_order
         return True
-    
+
     def is_distance_between_adjacent_equal(self) -> bool:
-        # Расстояние между соседними вершинами через одну должны быть равны
+        # The distance between adjacent vertices through one must be equal
         distance = []
         if self.num_sides % 2 == 0:
             distance = self.get_between_distance(self.correct_order[::2]
@@ -132,11 +168,9 @@ class Creator():
             (result.append(round(
                 self.vertices[pre_i].get_distance(self.vertices[i]),
                 self.NUM_ROUND)))
-            #print(self.vertices[pre_i], self.vertices[i])
-            #print(f'start: {pre_i}, stop{i} - {result}')
-
             pre_i = i
         return result
+
 
 def get_vertices(coordinates: List[tuple]):
     return map(lambda x: Vertices(*x), coordinates)
@@ -155,194 +189,16 @@ def main() -> None:
     t1 = action(*get_vertices(triangle))
     p1 = action(*get_vertices(pentagon))
 
-
-    #t = Triangle(vt1, vt2, vt3)
-    #t2 = Triangle(vt2, vt1, vt3)
-    #print(t1.get_info())
-    print(t1)
-    print(p1)
-    #print(t == t2)
-    #print()
-
-    vp1 = Vertices(30, 2.01)
-    vp2 = Vertices(31.91, 0.62)
-    vp3 = Vertices(31.18, -1.63)
-    vp4 = Vertices(28.82, -1.63)
-    vp5 = Vertices(28.09, 0.62)
-    #p = Pentagon(vp1, vp2, vp3, vp4, vp5)
-    #p2 = Pentagon(vp5, vp3, vp1, vp4, vp2)
-    #print(p.get_info())
-    #print()
-    #print(p == p2)
-    #print(t == p)
-
-    
-
-if __name__ == '__main__':
-    main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''from dataclasses import dataclass
-from math import radians, sqrt, tan
-
-
-
-
-
-class Shapes:
-    """General class for shapes."""
-
-    NUM_SIDES = 0
-    NUM_ROUND = 1
-    side: float
-
-    def __init__(self, *vertices: Vertices) -> None:
-        # Мне, честно признаться, не очень нравится идея валидировать данные в конструкторе
-        # конструктор должен собрать объект из валидных данных. Но как в такой системе классов сделать красиво, сказать
-        # пока не готов.
-        # Пока видиться только превратить в абстрактный класс. См. модуль abc. И то, логику тогда придется поменять. Но
-        # это поможеть избавить от NotImplementdError в этом классе и явно не даст создать объект с типом Shapes.
-        self.vertices = vertices
-
-        if self.NUM_SIDES != len(self.vertices):
-            raise WrongFigureTypeError(self.__class__.__name__)
-
-        if not self.check_correct():
-            raise WrongFigureVerticesError(self.__class__.__name__)
-
-    def get_side(self) -> float:
-        """Get the size of the side by the minimum distance between the
-        vertices."""
-
-        # может быть стоит это превратить в property?
-        return self.side
-
-    def get_area(self) -> float:
-        """Get the area of the shape."""
-        # Данный метод занимается рассчетом площади. А расчет площади не занимается валидацией количества вершин.
-        # Тут явно стоит изменить логику работы.
-        if self.NUM_SIDES == 0:
-            raise NotImplementedError(f'Define NUM_SIDES in '
-                                      f'{self.__class__.__name__}')
-        return (round((((self.NUM_SIDES * (self.get_side() ** 2)) / 4)
-                * (1 / (tan(radians(180 / self.NUM_SIDES))))), self.NUM_ROUND))
-
-    def get_perimetr(self) -> float:
-        """Get the perimeter of the shape."""
-        # См. предыдущий метод.
-        if self.NUM_SIDES == 0:
-            raise NotImplementedError(f'Define NUM_SIDES in '
-                                      f'{self.__class__.__name__}')
-        return self.get_side() * self.NUM_SIDES
-
-    def __eq__(self, other) -> bool:
-        """Compare shapes."""
-        # В классе Vertices реализован ментод __eq__, но тут почему-то используем не его. Зачем он нужен тогда?
-        # См. функцию zip, она поможет сделать все красиво
-        return (set(vert.get_tuple() for vert in self.vertices)
-                == set(vert.get_tuple() for vert in other.vertices))
-
-    def get_info(self) -> str:
-        """Return all values of shape"""
-        # Тут все ок, но ИМХО type(self).__name__ более читаемо. Но применимы оба варианта, зависит от команды и
-        # применяемого стиля кода в ней
-        return (f'Figure: {self.__class__.__name__},\n'
-                f'Side: {self.get_side()},\n'
-                f'Area: {self.get_area()},\n'
-                f'Perimetr: {self.get_perimetr()}')
-
-    def check_correct(self) -> bool:
-        """The vertices must be different.
-        All sides should be the same.
-        All vertices must lie on the same circle."""
-
-        # Тут подвешу вопрос. Что вернет type(self.vertices) в классе Vertices? :)
-        # Может можно избавиться от этих конверсий туда-сюда?
-        vert_list = [vert.get_tuple() for vert in self.vertices]
-        if len(set(vert_list)) != len(self.vertices):
-            return False
-
-
-        # Чисто математически, многоугольник правильный, если его стороны равны и углы между сторонами равны.
-        # Сорри, глубоко не вникаю, что тут происходит.
-        # В будущих проектах стоит давать более осмысленные имена переменным и изолировать логику в методах/функциях.
-        # Причем, это могут быть вложенные функции.
-        vert_start = self.vertices[0]
-        result = []
-        for vert_stop in self.vertices[1:]:
-            result.append(round(vert_start.get_distance(vert_stop),
-                          self.NUM_ROUND))
-        min_side = min(result)
-        temp_list = list(range(1, len(self.vertices)))
-        work_list = [0]
-        while len(temp_list):
-            for i in temp_list.copy():
-                if (round(self.vertices[work_list[-1]].
-                          get_distance(self.vertices[i]), self.NUM_ROUND)
-                        == min_side):
-                    work_list.append(temp_list.pop(temp_list.index(i)))
-                    break
-            else:
-                return False
-
-        dist_list = []
-        for gd in work_list:
-            (dist_list.append(
-             round(self.vertices[gd].get_distance(self.vertices[
-                (gd + 2) % len(work_list)]), self.NUM_ROUND)))
-        if len(set(dist_list)) > 1:
-            return False
-
-        self.side = min_side
-        return True
-
-
-class Triangle(Shapes):
-
-    NUM_SIDES = 3
-
-
-class Pentagon(Shapes):
-
-    NUM_SIDES = 5
-
-
-def main() -> None:
-    # Correct coordinates
-    vt1 = Vertices(18, 2.01)
-    vt2 = Vertices(16.26, -1.01)
-    vt3 = Vertices(19.74, -1.01)
-    t = Triangle(vt1, vt2, vt3)
-    t2 = Triangle(vt2, vt1, vt3)
-    print(t.get_info())
+    print(t1.get_info())
     print()
-    print(t == t2)
-    print()
+    print(p1.get_info())
 
-    vp1 = Vertices(30, 2.01)
-    vp2 = Vertices(31.91, 0.62)
-    vp3 = Vertices(31.18, -1.63)
-    vp4 = Vertices(28.82, -1.63)
-    vp5 = Vertices(28.09, 0.62)
-    p = Pentagon(vp1, vp2, vp3, vp4, vp5)
-    p2 = Pentagon(vp5, vp3, vp1, vp4, vp2)
-    print(p.get_info())
-    print()
-    print(p == p2)
-    print(t == p)
+    print(f'Compare t1 == p1: {t1 == p1}')
+    pentagon = [(31.91, 0.62), (31.18, -1.63), (28.82, -1.63), (28.09, 0.62),
+                (30, 2.01)]
+    p2 = action(*get_vertices(pentagon))
+    print(f'Compare p1 == p2: {p1 == p2}')
 
 
 if __name__ == '__main__':
     main()
-'''
